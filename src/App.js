@@ -10,9 +10,12 @@ import Testimonios from './components/Testimonios';
 import FAQ from './components/FAQ';
 import Contacto from './components/Contacto';
 import Footer from './components/Footer';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import AdminDashboard from "./components/AdminDashboard"; 
 
 
-function App() {
+
+function LandingPage() {
   return (
     <div className="">
       <Navbar />
@@ -50,6 +53,20 @@ function App() {
         <Footer />
       </section>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        {/* Landing normal */}
+        <Route path="/" element={<LandingPage />} />
+
+        {/* Dashboard AdminLTE para la evaluación 3 */}
+        <Route path="/admin" element={<AdminDashboard />} />
+      </Routes>
+    </Router>
   );
 }
 
