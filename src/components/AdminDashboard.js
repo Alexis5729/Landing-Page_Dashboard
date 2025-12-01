@@ -1,14 +1,7 @@
-// src/components/AdminDashboard.js
 import React, { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-
-/*
-  Dashboard tipo AdminLTE para HelioAndes
-  - CRUD de Servicios
-  - CRUD de Planes
-
-  Todo se maneja en memoria con useState (no hay backend).
-*/
+import Modal from "react-bootstrap/Modal";
+import Button from "react-bootstrap/Button";
 
 function AdminDashboard() {
   // --- SERVICIOS ---
@@ -25,6 +18,10 @@ function AdminDashboard() {
   });
 
   const [modoEdicionServicio, setModoEdicionServicio] = useState(false);
+
+  // Estado para “ver detalle” de un servicio
+  const [servicioSeleccionado, setServicioSeleccionado] = useState(null);
+  const [mostrarDetalleServicio, setMostrarDetalleServicio] = useState(false);
 
   function manejarCambioServicio(e) {
     const { name, value } = e.target;
@@ -78,6 +75,17 @@ function AdminDashboard() {
     }
   }
 
+  // Funciones para abrir/cerrar detalle de servicio
+  function verDetalleServicio(servicio) {
+    setServicioSeleccionado(servicio);
+    setMostrarDetalleServicio(true);
+  }
+
+  function cerrarDetalleServicio() {
+    setMostrarDetalleServicio(false);
+    setServicioSeleccionado(null);
+  }
+
   // --- PLANES ---
   const [planes, setPlanes] = useState([
     { id: 1, nombre: "Básico", rangoPotencia: "3–5 kW", beneficios: "Estudio + instalación estándar + monitoreo básico" },
@@ -92,6 +100,10 @@ function AdminDashboard() {
   });
 
   const [modoEdicionPlan, setModoEdicionPlan] = useState(false);
+
+  // Estado para “ver detalle” de un plan
+  const [planSeleccionado, setPlanSeleccionado] = useState(null);
+  const [mostrarDetallePlan, setMostrarDetallePlan] = useState(false);
 
   function manejarCambioPlan(e) {
     const { name, value } = e.target;
@@ -139,21 +151,32 @@ function AdminDashboard() {
     }
   }
 
+  // Funciones para abrir/cerrar detalle de plan
+  function verDetallePlan(plan) {
+    setPlanSeleccionado(plan);
+    setMostrarDetallePlan(true);
+  }
+
+  function cerrarDetallePlan() {
+    setMostrarDetallePlan(false);
+    setPlanSeleccionado(null);
+  }
+
   return (
     <div className="bg-light" style={{ minHeight: "100vh" }}>
-      {/* HEADER tipo AdminLTE */}
+      
       <nav className="navbar navbar-expand navbar-white navbar-light border-bottom shadow-sm bg-white">
         <div className="container-fluid">
           <span className="navbar-brand fw-bold">
             HelioAndes Admin
-          </span>          
+          </span>
         </div>
       </nav>
 
-      {/* LAYOUT con sidebar + contenido */}
+      {/* Layout con sidebar + contenido */}
       <div className="container-fluid">
         <div className="row">
-          {/* SIDEBAR simple (tipo AdminLTE) */}
+          {/* Sidebar simple */}
           <aside className="col-12 col-md-3 col-lg-2 bg-dark text-white p-3" style={{ minHeight: "calc(100vh - 56px)" }}>
             <h6 className="text-uppercase text-muted">Menú</h6>
             <ul className="nav nav-pills flex-column">
@@ -171,9 +194,9 @@ function AdminDashboard() {
             </ul>
           </aside>
 
-          {/* CONTENIDO PRINCIPAL */}
+          
           <main className="col-12 col-md-9 col-lg-10 p-4">
-            {/* ENCABEZADO DE CONTENIDO */}
+            {/* Encabezado del contenido*/}
             <div className="mb-4">
               <h2 className="fw-bold">Panel de Administración</h2>
               <p className="text-muted mb-0">
@@ -181,7 +204,7 @@ function AdminDashboard() {
               </p>
             </div>
 
-            {/* CARD SERVICIOS */}
+            {/* Card Servicios */}
             <div className="card mb-4 shadow-sm">
               <div className="card-header bg-primary text-white">
                 <h5 className="mb-0">
@@ -270,6 +293,15 @@ function AdminDashboard() {
                           <td>{servicio.categoria}</td>
                           <td>{servicio.descripcion}</td>
                           <td className="text-end">
+                            {/* Botón Ver detalle */}
+                            <Button
+                              variant="info"
+                              size="sm"
+                              className="me-2"
+                              onClick={() => verDetalleServicio(servicio)}
+                            >
+                              Ver Detalle
+                            </Button>
                             <button
                               className="btn btn-sm btn-outline-primary me-2"
                               onClick={() => editarServicio(servicio)}
@@ -291,7 +323,7 @@ function AdminDashboard() {
               </div>
             </div>
 
-            {/* CARD PLANES */}
+            {/* Card Planes */}
             <div className="card shadow-sm">
               <div className="card-header bg-success text-white">
                 <h5 className="mb-0">
@@ -380,6 +412,15 @@ function AdminDashboard() {
                           <td>{plan.rangoPotencia}</td>
                           <td>{plan.beneficios}</td>
                           <td className="text-end">
+                            {/* Botón Ver detalle */}
+                            <Button
+                              variant="info"
+                              size="sm"
+                              className="me-2"
+                              onClick={() => verDetallePlan(plan)}
+                            >
+                              Ver Detalle
+                            </Button>
                             <button
                               className="btn btn-sm btn-outline-primary me-2"
                               onClick={() => editarPlan(plan)}
@@ -400,6 +441,62 @@ function AdminDashboard() {
                 </div>
               </div>
             </div>
+
+            {/* Modal detalle Servicio */}
+            <Modal
+              show={mostrarDetalleServicio}
+              onHide={cerrarDetalleServicio}
+              centered
+            >
+              <Modal.Header closeButton>
+                <Modal.Title>Detalle del servicio</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                {servicioSeleccionado && (
+                  <>
+                    <p><strong>Nombre:</strong> {servicioSeleccionado.nombre}</p>
+                    <p><strong>Categoría:</strong> {servicioSeleccionado.categoria || "Sin categoría"}</p>
+                    <p><strong>Descripción:</strong></p>
+                    <p className="mb-0">
+                      {servicioSeleccionado.descripcion || "Sin descripción"}
+                    </p>
+                  </>
+                )}
+              </Modal.Body>
+              <Modal.Footer>
+                <Button variant="secondary" onClick={cerrarDetalleServicio}>
+                  Cerrar
+                </Button>
+              </Modal.Footer>
+            </Modal>
+
+            {/* Modal detalle PLAN */}
+            <Modal
+              show={mostrarDetallePlan}
+              onHide={cerrarDetallePlan}
+              centered
+            >
+              <Modal.Header closeButton>
+                <Modal.Title>Detalle del plan</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                {planSeleccionado && (
+                  <>
+                    <p><strong>Nombre del plan:</strong> {planSeleccionado.nombre}</p>
+                    <p><strong>Rango de potencia:</strong> {planSeleccionado.rangoPotencia || "Sin rango definido"}</p>
+                    <p><strong>Beneficios:</strong></p>
+                    <p className="mb-0">
+                      {planSeleccionado.beneficios || "Sin beneficios detallados"}
+                    </p>
+                  </>
+                )}
+              </Modal.Body>
+              <Modal.Footer>
+                <Button variant="secondary" onClick={cerrarDetallePlan}>
+                  Cerrar
+                </Button>
+              </Modal.Footer>
+            </Modal>
 
           </main>
         </div>
