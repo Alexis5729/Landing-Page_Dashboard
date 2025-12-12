@@ -1,14 +1,13 @@
-import React, { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
+import React, { useEffect, useState } from "react";
+import { getServicios, createServicio, updateServicio, deleteServicio } from "../services/serviciosService";
+import { getPlanes, createPlan, updatePlan, deletePlan } from "../services/planesService";
 
 function AdminDashboard() {
   // --- SERVICIOS ---
-  const [servicios, setServicios] = useState([
-    { id: 1, nombre: "Estudio Energético", descripcion: "Análisis de consumo y radiación", categoria: "Diagnóstico" },
-    { id: 2, nombre: "Instalación Certificada", descripcion: "Montaje con técnicos SEC", categoria: "Instalación" },
-  ]);
+  const [servicios, setServicios] = useState([]);
 
   const [servicioForm, setServicioForm] = useState({
     id: null,
@@ -28,35 +27,61 @@ function AdminDashboard() {
     setServicioForm(prev => ({ ...prev, [name]: value }));
   }
 
-  function manejarSubmitServicio(e) {
+  async function manejarSubmitServicio(e) {
     e.preventDefault();
 
-    // Validación simple
     if (!servicioForm.nombre.trim()) {
       alert("El servicio debe tener un nombre.");
       return;
     }
 
-    if (modoEdicionServicio) {
-      // Editar
-      setServicios(prev =>
-        prev.map(s =>
-          s.id === servicioForm.id ? { ...servicioForm, id: s.id } : s
-        )
-      );
-      setModoEdicionServicio(false);
-    } else {
-      // Crear
-      const nuevo = {
-        ...servicioForm,
-        id: Date.now(),
-      };
-      setServicios(prev => [...prev, nuevo]);
-    }
+    try {
+      if (modoEdicionServicio) {
+        const actualizado = await updateServicio(servicioForm.id, {
+          nombre: servicioForm.nombre,
+          descripcion: servicioForm.descripcion,
+          categoria: servicioForm.categoria,
+        });
 
-    // Limpiar formulario
-    setServicioForm({ id: null, nombre: "", descripcion: "", categoria: "" });
+        setServicios(prev => prev.map(s => (s.id === actualizado.id ? actualizado : s)));
+        setModoEdicionServicio(false);
+      } else {
+        const creado = await createServicio({
+          nombre: servicioForm.nombre,
+          descripcion: servicioForm.descripcion,
+          categoria: servicioForm.categoria,
+        });
+
+        setServicios(prev => [...prev, creado]);
+      }
+
+      setServicioForm({ id: null, nombre: "", descripcion: "", categoria: "" });
+    } catch (e) {
+      console.error(e);
+      alert("Error al guardar servicio en la API.");
+    }
   }
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const cargarDatos = async () => {
+      try {
+        setLoading(true);
+        const [servs, pls] = await Promise.all([getServicios(), getPlanes()]);
+        setServicios(servs);
+        setPlanes(pls);
+      } catch (e) {
+        console.error(e);
+        setError("No se pudo conectar con Mockoon (API). Revisa que esté encendido y el puerto.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    cargarDatos();
+  }, []);
 
   function editarServicio(servicio) {
     // Carga datos en el formulario y activa modo edición
@@ -64,14 +89,15 @@ function AdminDashboard() {
     setModoEdicionServicio(true);
   }
 
-  function eliminarServicio(id) {
-    if (window.confirm("¿Seguro que deseas eliminar este servicio?")) {
+  async function eliminarServicio(id) {
+    if (!window.confirm("¿Seguro que deseas eliminar este servicio?")) return;
+
+    try {
+      await deleteServicio(id);
       setServicios(prev => prev.filter(s => s.id !== id));
-      // Si estaba editando ese mismo, limpiar el formulario
-      if (servicioForm.id === id) {
-        setServicioForm({ id: null, nombre: "", descripcion: "", categoria: "" });
-        setModoEdicionServicio(false);
-      }
+    } catch (e) {
+      console.error(e);
+      alert("Error al eliminar servicio en la API.");
     }
   }
 
@@ -87,10 +113,7 @@ function AdminDashboard() {
   }
 
   // --- PLANES ---
-  const [planes, setPlanes] = useState([
-    { id: 1, nombre: "Básico", rangoPotencia: "3–5 kW", beneficios: "Estudio + instalación estándar + monitoreo básico" },
-    { id: 2, nombre: "Optimizado", rangoPotencia: "10–15 kW", beneficios: "Estudio avanzado + instalación optimizada + monitoreo avanzado" },
-  ]);
+  const [planes, setPlanes] = useState([]);
 
   const [planForm, setPlanForm] = useState({
     id: null,
@@ -164,7 +187,13 @@ function AdminDashboard() {
 
   return (
     <div className="bg-light" style={{ minHeight: "100vh" }}>
-      
+      {/* Mostrar mensaje de error si no hay conexión con Mockoon */}
+      {error && (
+        <div className="alert alert-danger m-3">
+          {error}
+        </div>
+      )}
+
       <nav className="navbar navbar-expand navbar-white navbar-light border-bottom shadow-sm bg-white">
         <div className="container-fluid">
           <span className="navbar-brand fw-bold">
@@ -173,10 +202,8 @@ function AdminDashboard() {
         </div>
       </nav>
 
-      {/* Layout con sidebar + contenido */}
       <div className="container-fluid">
         <div className="row">
-          {/* Sidebar simple */}
           <aside className="col-12 col-md-3 col-lg-2 bg-dark text-white p-3" style={{ minHeight: "calc(100vh - 56px)" }}>
             <h6 className="text-uppercase text-muted">Menú</h6>
             <ul className="nav nav-pills flex-column">
@@ -194,9 +221,7 @@ function AdminDashboard() {
             </ul>
           </aside>
 
-          
           <main className="col-12 col-md-9 col-lg-10 p-4">
-            {/* Encabezado del contenido*/}
             <div className="mb-4">
               <h2 className="fw-bold">Panel de Administración</h2>
               <p className="text-muted mb-0">
@@ -504,5 +529,4 @@ function AdminDashboard() {
     </div>
   );
 }
-
 export default AdminDashboard;
