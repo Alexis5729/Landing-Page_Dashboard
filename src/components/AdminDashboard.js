@@ -133,7 +133,7 @@ function AdminDashboard() {
     setPlanForm(prev => ({ ...prev, [name]: value }));
   }
 
-  function manejarSubmitPlan(e) {
+  async function manejarSubmitPlan(e) {
     e.preventDefault();
 
     if (!planForm.nombre.trim()) {
@@ -141,22 +141,31 @@ function AdminDashboard() {
       return;
     }
 
-    if (modoEdicionPlan) {
-      setPlanes(prev =>
-        prev.map(p =>
-          p.id === planForm.id ? { ...planForm, id: p.id } : p
-        )
-      );
-      setModoEdicionPlan(false);
-    } else {
-      const nuevo = {
-        ...planForm,
-        id: Date.now(),
-      };
-      setPlanes(prev => [...prev, nuevo]);
-    }
+    try {
+      if (modoEdicionPlan) {
+        const actualizado = await updatePlan(planForm.id, {
+          nombre: planForm.nombre,
+          rangoPotencia: planForm.rangoPotencia,
+          beneficios: planForm.beneficios,
+        });
 
-    setPlanForm({ id: null, nombre: "", rangoPotencia: "", beneficios: "" });
+        setPlanes(prev => prev.map(p => (p.id === actualizado.id ? actualizado : p)));
+        setModoEdicionPlan(false);
+      } else {
+        const creado = await createPlan({
+          nombre: planForm.nombre,
+          rangoPotencia: planForm.rangoPotencia,
+          beneficios: planForm.beneficios,
+        });
+
+        setPlanes(prev => [...prev, creado]);
+      }
+
+      setPlanForm({ id: null, nombre: "", rangoPotencia: "", beneficios: "" });
+    } catch (e) {
+      console.error(e);
+      alert("Error al guardar plan en la API.");
+    }
   }
 
   function editarPlan(plan) {
